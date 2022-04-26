@@ -1,10 +1,10 @@
 configfile: "config.yaml"
 rule all:
     input:
-        "{sample}.bam"
+        "{sample}_final.bam"
 rule index:
     output:
-        "{config[reference][fasta]}.bwt"
+        expand("{reference}.bwt",reference=config['reference']['fasta'])
     shell:
         "{config[dependencies][bwa]} index {config[reference][fasta]}"
 
@@ -15,7 +15,7 @@ rule convert_to_bam:
     output:
         "{sample}_unmapped.bam"
     shell:
-        "java -jar {config[dependencies][picard]} FastqToSam -F1={input[0]} -F2={input[1]} -O={output}"
+        "java -jar {config[dependencies][picard]} FastqToSam -F1 {input[0]} -F2 {input[1]} -O {output} -SM {wildcards.sample}"
 
 rule extract_umi:
     input:
@@ -32,12 +32,12 @@ rule convert_to_fastq:
         "{sample}_undone_1.fastq",
         "{sample}_undone_2.fastq"
     shell: 
-        "java -jar {config[dependencies][picard]} SamToFastq -F={output[0]} -F2={output[1]} -I={input}"
+        "java -jar {config[dependencies][picard]} SamToFastq -F {output[0]} -F2 {output[1]} -I {input}"
 
 rule bwa_map:
     input:
-        "{config[reference][fasta]}",
-        "{config[reference][fasta]}.bwt",
+        expand("{reference}",reference=config['reference']['fasta']),
+        expand("{reference}.bwt",reference=config['reference']['fasta']),
         "{sample}_undone_1.fastq",
         "{sample}_undone_2.fastq"
     output:
@@ -52,7 +52,7 @@ rule merge_bams:
     output:
         "{sample}_merged.bam"
     shell:
-        "java -jar {config[dependencies][picard]} MergeBamAlignment -UNMAPPED={input[0]} -ALIGNED={input[1]} -O {output}"
+        "java -jar {config[dependencies][picard]} MergeBamAlignment -UNMAPPED {input[0]} -ALIGNED {input[1]} -O {output}"
 
 rule markdup:
     input:
@@ -68,30 +68,30 @@ rule group_reads:
     output:
         "{sample}_grouped.bam"
     shell:
-        "java -jar {config[dependencies][fgbio]} GroupReadsByUmi -i {input} -o {output} -f {sample}_family_size.txt -s paired"
+        "java -jar {config[dependencies][fgbio]} GroupReadsByUmi -i {input} -o {output} -f {wildcards.sample}_family_size.txt -s paired"
 
 rule call_consensus:
     input:
         "{sample}_grouped.bam"
     output:
-        "{sample}_consensus_unmapped.bam"
+        "{sample}_consensus.bam"
     shell:
         "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output}"
 
 rule convert_consensus_to_fastq:
     input: 
-        "{sample}_consensus_unmapped.bam"
+        "{sample}_consensus.bam"
     output: 
         "{sample}_consensus.fastq"
     shell: 
-        "java -jar {config[dependencies][picard]} SamToFastq -F={output} -I={input}"
+        "java -jar {config[dependencies][picard]} SamToFastq -F {output} -I {input}"
 
 rule bwa_map_consensus:
     input:
-        "{config[reference][fasta]}",
-        "{config[reference][fasta]}.bwt",
+        expand("{reference}",reference=config['reference']['fasta']),
+        expand("{reference}.bwt",reference=config['reference']['fasta']),
         "{sample}_consensus.fastq"
     output:
-        "{sample}.bam"
+        "{sample}_final.bam"
     shell:
         "{config[dependencies][bwa]} mem {input[0]} {input[2]} | {config[dependencies][sambamba]}-view -b > {output}"

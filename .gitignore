@@ -1,2 +1,4 @@
 *.jar
 *.fa*
+.snakemake/*
+*fq.gz
