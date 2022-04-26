@@ -1,4 +1,5 @@
 dependencies:
     picard: ./picard.jar
     fgbio: ./fgbio-2.0.1.jar
-    
+reference:
+    fasta: ./dmel6.fa    
