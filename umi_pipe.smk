@@ -1,8 +1,7 @@
 configfile: "config.yaml"
 rule all:
     input:
-        "{sample}_consensus_aligned.bam"
-
+        "{sample}.bam"
 rule index:
     output:
         "{config[reference][fasta]}.bwt"
@@ -11,8 +10,8 @@ rule index:
 
 rule convert_to_bam:
     input:
-        "{sample}_1.fastq",
-        "{sample}_2.fastq"
+        "{sample}_1.fq.gz",
+        "{sample}_2.fq.gz"
     output:
         "{sample}_unmapped.bam"
     shell:
@@ -44,7 +43,7 @@ rule bwa_map:
     output:
         "{sample}_aligned.bam"
     shell:
-        "{config[dependencies][bwa]} mem {input[0]} {input[2]} {input[3]} | {config[dependencies][samtools]} view -b > {output}"
+        "{config[dependencies][bwa]} mem {input[0]} {input[2]} {input[3]} | {config[dependencies][sambamba]}-view -b > {output}"
 
 rule merge_bams:
     input:
@@ -59,10 +58,9 @@ rule markdup:
     input:
         "{sample}_merged.bam"
     output:
-        "{sample}_markdup.bam",
-        "{sample}_dup_metrics.txt"
+        "{sample}_markdup.bam"
     shell:
-        "java -jar {config[dependencies][picard]} MarkDuplicates -I={input} -O={output[0]} -M={output[1]}"
+        "{config[dependencies][sambamba]}-markdup {input} {output} -p"
 
 rule group_reads:
     input:
@@ -76,13 +74,13 @@ rule call_consensus:
     input:
         "{sample}_grouped.bam"
     output:
-        "{sample}_consensus.bam"
+        "{sample}_consensus_unmapped.bam"
     shell:
         "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output}"
 
 rule convert_consensus_to_fastq:
     input: 
-        "{sample}_consensus.bam"
+        "{sample}_consensus_unmapped.bam"
     output: 
         "{sample}_consensus.fastq"
     shell: 
@@ -94,6 +92,6 @@ rule bwa_map_consensus:
         "{config[reference][fasta]}.bwt",
         "{sample}_consensus.fastq"
     output:
-        "{sample}_consensus_aligned.bam"
+        "{sample}.bam"
     shell:
-        "{config[dependencies][bwa]} mem {input[0]} {input[2]} | {config[dependencies][samtools]} view -b > {output}"
+        "{config[dependencies][bwa]} mem {input[0]} {input[2]} | {config[dependencies][sambamba]}-view -b > {output}"
