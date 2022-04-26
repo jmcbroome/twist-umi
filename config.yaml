@@ -1,5 +1,6 @@
 dependencies:
     picard: ./picard.jar
     fgbio: ./fgbio-2.0.1.jar
+    bwa: bwa
 reference:
     fasta: ./dmel6.fa    
