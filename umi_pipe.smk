@@ -23,7 +23,7 @@ rule extract_umi:
     output:
         "{sample}_tagged.bam"
     shell:
-        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output}"
+        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output} -r {config[read-structure]}"
 
 rule convert_to_fastq:
     input: 
@@ -68,7 +68,7 @@ rule group_reads:
     output:
         "{sample}_grouped.bam"
     shell:
-        "java -jar {config[dependencies][fgbio]} GroupReadsByUmi -i {input} -o {output} -f {wildcards.sample}_family_size.txt -s paired"
+        "java -jar {config[dependencies][fgbio]} GroupReadsByUmi -i {input} -o {output} -f {wildcards.sample}_family_size.txt -s paired "
 
 rule call_consensus:
     input:

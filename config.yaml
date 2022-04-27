@@ -5,3 +5,4 @@ dependencies:
     sambamba: sambamba
 reference:
     fasta: dmel6.fa
+read-structre: 5M2S144T
