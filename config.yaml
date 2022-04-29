@@ -3,6 +3,7 @@ dependencies:
     fgbio: ./fgbio-2.0.1.jar
     bwa: bwa
     sambamba: sambamba
+    samtools: samtools
 reference:
     fasta: dmel6.fa
 read-structure: 5M2S144T

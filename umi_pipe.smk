@@ -23,7 +23,7 @@ rule extract_umi:
     output:
         "{sample}_tagged.bam"
     shell:
-        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output} -r {config[read-structure]}"
+        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output} -r {config[read-structure]} {config[read-structure]} -t RX"
 
 rule convert_to_fastq:
     input: 
@@ -42,8 +42,9 @@ rule bwa_map:
         "{sample}_undone_2.fastq"
     output:
         "{sample}_aligned.bam"
+    threads: 24
     shell:
-        "{config[dependencies][bwa]} mem {input[0]} {input[2]} {input[3]} | {config[dependencies][sambamba]}-view -b > {output}"
+        "{config[dependencies][bwa]} mem -t {threads} {input[0]} {input[2]} {input[3]} | {config[dependencies][samtools]} view -b > {output}"
 
 rule merge_bams:
     input:
@@ -59,8 +60,9 @@ rule markdup:
         "{sample}_merged.bam"
     output:
         "{sample}_markdup.bam"
+    threads: 24
     shell:
-        "{config[dependencies][sambamba]}-markdup {input} {output} -p"
+        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads}"
 
 rule group_reads:
     input:
@@ -75,8 +77,9 @@ rule call_consensus:
         "{sample}_grouped.bam"
     output:
         "{sample}_consensus.bam"
+    threads: 24
     shell:
-        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output}"
+        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} -t {threads}"
 
 rule convert_consensus_to_fastq:
     input: 
@@ -93,5 +96,6 @@ rule bwa_map_consensus:
         "{sample}_consensus.fastq"
     output:
         "{sample}_final.bam"
+    threads: 24
     shell:
-        "{config[dependencies][bwa]} mem {input[0]} {input[2]} | {config[dependencies][sambamba]}-view -b > {output}"
+        "{config[dependencies][bwa]} mem -t {threads} {input[0]} {input[2]} | {config[dependencies][samtools]} view -b > {output}"
