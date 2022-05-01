@@ -4,6 +4,7 @@ dependencies:
     bwa: bwa
     sambamba: sambamba
     samtools: samtools
-reference:
-    fasta: dmel6.fa
-read-structure: 5M2S144T
+    fastp: ./fastp
+reference: dmel6
+read_structure_r1: 5M2S144T
+read_structure_r2: 5M2S144T

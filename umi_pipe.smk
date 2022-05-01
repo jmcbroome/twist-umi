@@ -2,16 +2,38 @@ configfile: "config.yaml"
 rule all:
     input:
         "{sample}_final.bam"
+
 rule index:
     output:
-        expand("{reference}.bwt",reference=config['reference']['fasta'])
+        expand("{reference}.bwt",reference=config['reference'] + ".fa")
     shell:
-        "{config[dependencies][bwa]} index {config[reference][fasta]}"
+        "{config[dependencies][bwa]} index {config[reference]}.fa"
+        "java -jar ./picard.jar CreateSequenceDictionary -R {config[reference]}.fa -O {config[reference]}.dict"
+
+rule trim_adapters:
+    input:
+        "{sample}_1.fq.gz",
+        "{sample}_2.fq.gz"    
+    output:
+        "{sample}_1.trimmed.fq.gz",
+        "{sample}_2.trimmed.fq.gz",
+        "fastp_summ.txt"
+    threads:
+        16
+    log:
+        "fastp.log"
+    shell:
+        "{config[dependencies][fastp]} --in1 {input[0]} --in2 {input[1]} "
+        "--out1 {output[0]} --out2 {output[1]} "
+        "--thread {threads} "
+        "--detect_adapter_for_pe "
+        "-j /dev/null -h /dev/null "
+        "2> {output[2]} > {log}"
 
 rule convert_to_bam:
     input:
-        "{sample}_1.fq.gz",
-        "{sample}_2.fq.gz"
+        "{sample}_1.trimmed.fq.gz",
+        "{sample}_2.trimmed.fq.gz"
     output:
         "{sample}_unmapped.bam"
     shell:
@@ -23,11 +45,11 @@ rule extract_umi:
     output:
         "{sample}_tagged.bam"
     shell:
-        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output} -r {config[read-structure]} {config[read-structure]} -t RX"
+        "java -jar {config[dependencies][fgbio]} ExtractUmisFromBam -i {input} -o {output} -r {config[read_structure_r1]} {config[read_structure_r2]} -t RX"
 
 rule convert_to_fastq:
     input: 
-        "{sample}_unmapped.bam"
+        "{sample}_tagged.bam"
     output: 
         "{sample}_undone_1.fastq",
         "{sample}_undone_2.fastq"
@@ -36,8 +58,8 @@ rule convert_to_fastq:
 
 rule bwa_map:
     input:
-        expand("{reference}",reference=config['reference']['fasta']),
-        expand("{reference}.bwt",reference=config['reference']['fasta']),
+        expand("{reference}.fa",reference=config['reference']),
+        expand("{reference}.fa.bwt",reference=config['reference']),
         "{sample}_undone_1.fastq",
         "{sample}_undone_2.fastq"
     output:
@@ -53,7 +75,7 @@ rule merge_bams:
     output:
         "{sample}_merged.bam"
     shell:
-        "java -jar {config[dependencies][picard]} MergeBamAlignment -UNMAPPED {input[0]} -ALIGNED {input[1]} -O {output}"
+        "java -jar {config[dependencies][picard]} MergeBamAlignment -UNMAPPED {input[0]} -ALIGNED {input[1]} -O {output} -REFERENCE_SEQUENCE {config[reference]}.fa"
 
 rule markdup:
     input:
@@ -62,7 +84,7 @@ rule markdup:
         "{sample}_markdup.bam"
     threads: 24
     shell:
-        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads}"
+        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads} --overflow-list-size 600000"
 
 rule group_reads:
     input:
@@ -79,7 +101,7 @@ rule call_consensus:
         "{sample}_consensus.bam"
     threads: 24
     shell:
-        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} -t {threads}"
+        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads}"
 
 rule convert_consensus_to_fastq:
     input: 
@@ -91,8 +113,8 @@ rule convert_consensus_to_fastq:
 
 rule bwa_map_consensus:
     input:
-        expand("{reference}",reference=config['reference']['fasta']),
-        expand("{reference}.bwt",reference=config['reference']['fasta']),
+        expand("{reference}.fa",reference=config['reference']),
+        expand("{reference}.fa.bwt",reference=config['reference']),
         "{sample}_consensus.fastq"
     output:
         "{sample}_final.bam"
