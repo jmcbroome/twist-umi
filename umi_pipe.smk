@@ -17,18 +17,11 @@ rule trim_adapters:
     output:
         "{sample}_1.trimmed.fq.gz",
         "{sample}_2.trimmed.fq.gz",
-        "fastp_summ.txt"
+        "{sample}_fastp.txt"
     threads:
         16
-    log:
-        "fastp.log"
     shell:
-        "{config[dependencies][fastp]} --in1 {input[0]} --in2 {input[1]} "
-        "--out1 {output[0]} --out2 {output[1]} "
-        "--thread {threads} "
-        "--detect_adapter_for_pe "
-        "-j /dev/null -h /dev/null "
-        "2> {output[2]} > {log}"
+        "{config[dependencies][fastp]} --in1 {input[0]} --in2 {input[1]}  --out1 {output[0]} --out2 {output[1]} --thread {threads} --detect_adapter_for_pe -j /dev/null -h /dev/null 2> {output[2]}"
 
 rule convert_to_bam:
     input:
@@ -107,17 +100,19 @@ rule convert_consensus_to_fastq:
     input: 
         "{sample}_consensus.bam"
     output: 
-        "{sample}_consensus.fastq"
+        "{sample}_consensus_r1.fastq",
+        "{sample}_consensus_r2.fastq"
     shell: 
-        "java -jar {config[dependencies][picard]} SamToFastq -F {output} -I {input}"
+        "java -jar {config[dependencies][picard]} SamToFastq -F {output[0]} -F2 {output[1]} -I {input}"
 
 rule bwa_map_consensus:
     input:
         expand("{reference}.fa",reference=config['reference']),
         expand("{reference}.fa.bwt",reference=config['reference']),
-        "{sample}_consensus.fastq"
+        "{sample}_consensus_r1.fastq",
+        "{sample}_consensus_r2.fastq"
     output:
         "{sample}_final.bam"
     threads: 24
     shell:
-        "{config[dependencies][bwa]} mem -t {threads} {input[0]} {input[2]} | {config[dependencies][samtools]} view -b > {output}"
+        "{config[dependencies][bwa]} mem -t {threads} {input[0]} {input[2]} {input[3]} | {config[dependencies][samtools]} view -b > {output}"
