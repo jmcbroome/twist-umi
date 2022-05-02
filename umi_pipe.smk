@@ -3,11 +3,16 @@ rule all:
     input:
         "{sample}_final.bam"
 
-rule index:
+rule bwa_index:
     output:
         expand("{reference}.bwt",reference=config['reference'] + ".fa")
     shell:
         "{config[dependencies][bwa]} index {config[reference]}.fa"
+
+rule picard_index:
+    output:
+        expand("{reference}.dict",reference=config['reference'])
+    shell:
         "java -jar ./picard.jar CreateSequenceDictionary -R {config[reference]}.fa -O {config[reference]}.dict"
 
 rule trim_adapters:
@@ -19,7 +24,7 @@ rule trim_adapters:
         "{sample}_2.trimmed.fq.gz",
         "{sample}_fastp.txt"
     threads:
-        16
+        24
     shell:
         "{config[dependencies][fastp]} --in1 {input[0]} --in2 {input[1]}  --out1 {output[0]} --out2 {output[1]} --thread {threads} --detect_adapter_for_pe -j /dev/null -h /dev/null 2> {output[2]}"
 
@@ -76,8 +81,10 @@ rule markdup:
     output:
         "{sample}_markdup.bam"
     threads: 24
+    log:
+        "{sample}_markdup.log"
     shell:
-        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads} --overflow-list-size 600000"
+        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads} --overflow-list-size 600000 > {log}"
 
 rule group_reads:
     input:
