@@ -84,7 +84,7 @@ rule markdup:
     log:
         "{sample}_markdup.log"
     shell:
-        "{config[dependencies][sambamba]} markdup {input} {output} -p -t {threads} --overflow-list-size 600000 > {log}"
+        "java -jar {config[dependencies][picard]} MarkDuplicates -I {input} -O {output} -M {log} --DUPLEX_UMI"
 
 rule group_reads:
     input:
@@ -100,8 +100,10 @@ rule call_consensus:
     output:
         "{sample}_consensus.bam"
     threads: 24
+    log:
+        "{sample}_consensus.log"
     shell:
-        "java -jar {config[dependencies][fgbio]} CallMolecularConsensusReads -i {input} -o {output} --threads {threads} -M 3"
+        "java -jar {config[dependencies][fgbio]} CallMolecularConsensusReads -i {input} -o {output} --threads {threads} -M 3 2> {log}"
 
 rule convert_consensus_to_fastq:
     input: 

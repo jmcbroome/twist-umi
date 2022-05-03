@@ -2,7 +2,6 @@ dependencies:
     picard: ./picard.jar
     fgbio: ./fgbio-2.0.1.jar
     bwa: bwa
-    sambamba: sambamba
     samtools: samtools
     fastp: ./fastp
 reference: dmel6
