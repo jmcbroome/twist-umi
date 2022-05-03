@@ -101,7 +101,7 @@ rule call_consensus:
         "{sample}_consensus.bam"
     threads: 24
     shell:
-        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads}"
+        "java -jar {config[dependencies][fgbio]} CallMolecularConsensusReads -i {input} -o {output} --threads {threads} -M 3"
 
 rule convert_consensus_to_fastq:
     input: 
