@@ -103,7 +103,7 @@ rule call_consensus:
     log:
         "{sample}_consensus.log"
     shell:
-        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads} -M 3 3 0 2> {log}"
+        "java -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads} -M 3 0 0 2> {log}"
 
 rule convert_consensus_to_fastq:
     input: 
