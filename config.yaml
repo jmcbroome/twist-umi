@@ -7,3 +7,5 @@ dependencies:
 reference: dmel6
 read_structure_r1: 5M2S144T
 read_structure_r2: 5M2S144T
+java_memory: 16g
+java_max_ram: 80
