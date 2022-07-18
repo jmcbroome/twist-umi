@@ -103,7 +103,7 @@ rule call_consensus:
     log:
         "{sample}_consensus.log"
     shell:
-        "java -XX:MaxRAMPercentage={config[java_max_ram]} -Xmx{config[java_memory]} -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads} -M 3 0 0 2> {log}"
+        "java -XX:MaxRAMPercentage={config[java_max_ram]} -Xmx{config[java_memory]} -jar {config[dependencies][fgbio]} CallDuplexConsensusReads -i {input} -o {output} --threads {threads} -M {config[params][min_final]} {config[params][min_first]} {config[params][min_second]} 2> {log}"
 
 rule convert_consensus_to_fastq:
     input: 
